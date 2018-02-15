@@ -2,12 +2,12 @@ import assert from "assert";
 import {readFileSync, existsSync} from "fs";
 import {resolve, dirname, extname} from "path";
 
-import memoize from "fast-memoize";
-import serialize from "babel-literal-to-ast";
-import uuid from "uuid/v4";
 import changeCase from "change-case";
+import memoize from "fast-memoize";
 import {parse} from "gonzales-pe";
 import {renderSync} from "node-sass";
+import serialize from "babel-literal-to-ast";
+import uuid from "uuid/v4";
 
 //
 const EXT_RE = /\.scss|\.sass/;
@@ -29,13 +29,7 @@ export default function({types: t}, opts) {
     let outputCase = opts.outputCase ?
         changeCase[opts.outputCase] : sameCase;
 
-    let extractNames = memoize(absPath => (
-        genCssProps(new VarNames(absPath).extract())
-    ));
-
-    let extractVars = memoize((absPath, names) => (
-        new SassVars(absPath, names, outputCase).extract()
-    ));
+    let lookup = new VarLookup(sassCase, outputCase);
 
     let visitor = {
         ImportDeclaration(astPath, {file}) {
@@ -50,8 +44,7 @@ export default function({types: t}, opts) {
             let replace = [];
 
             if (t.isImportDefaultSpecifier(specs[0])) {
-                let names = extractNames(absPath);
-                let vars = extractVars(absPath, names);
+                let vars = lookup.extractAllVars(absPath);
 
                 replace.push(t.variableDeclaration("const", [
                     t.variableDeclarator(specs[0].local, t.callExpression(
@@ -67,17 +60,14 @@ export default function({types: t}, opts) {
             }
 
             if (specs.length > 0) {
-                let names = genCssProps(specs.map(node => (
-                    sassCase(node.imported.name)
-                )));
-
-                let vars = extractVars(absPath, names);
+                let names = specs.map(node => node.imported.name);
+                let vars = lookup.extractVars(absPath, names);
 
                 specs.forEach(node => {
                     replace.push(t.variableDeclaration("const", [
                         t.variableDeclarator(
                             node.local,
-                            serialize(vars[outputCase(node.imported.name)])
+                            serialize(vars[node.imported.name])
                         )
                     ]));
                 });
@@ -105,8 +95,7 @@ export default function({types: t}, opts) {
             }
 
             let absPath = resolveAbsPath(file.opts.filename, importPath);
-            let names = extractNames(absPath);
-            let vars = extractVars(absPath, names);
+            let vars = lookup.extractAllVars(absPath);
 
             astPath.replaceWith(serialize(vars));
         }
@@ -115,10 +104,71 @@ export default function({types: t}, opts) {
     return {visitor};
 }
 
+class VarLookup {
+    constructor(sassCase, outputCase) {
+        this._sassCase = sassCase;
+        this._outputCase = outputCase;
+
+        // Maps filenames to a dictionary of known variable name/value pairs from that
+        // file.
+        //
+        // Each variable name is in `outputCase`.
+        this._fileVars = {};
+
+        this.extractAllVars = memoize(this._extractAllVars.bind(this));
+    }
+
+    _extractAllVars(absPath) {
+        return this._extractVars(absPath, this._extractNames(absPath));
+    }
+
+    _extractNames(absPath) {
+        return genCssProps(new VarNames(absPath).extract());
+    }
+
+    extractVars(absPath, names) {
+        let knownVars = this._lookupVars(absPath);
+
+        let unknownNames = [...names].filter(name => (
+            !knownVars.hasOwnProperty(name)
+        ));
+
+        if (unknownNames.length === 0) {
+            return knownVars;
+        }
+
+        let props = genCssProps(unknownNames.map(this._sassCase));
+        let vars = this._extractVars(absPath, props);
+
+        if (!unknownNames.every(name => vars.hasOwnProperty(name))) {
+            throw new Error("import names must be in the same case as `outputCase`");
+        }
+
+        return vars;
+    }
+
+    _extractVars(absPath, props) {
+        let vars = new SassVars(absPath, props, this._outputCase).extract();
+        let knownVars = this._lookupVars(absPath);
+
+        Object.assign(knownVars, vars);
+
+        return knownVars;
+    }
+
+    _lookupVars(absPath) {
+        if (!this._fileVars.hasOwnProperty(absPath)) {
+            this._fileVars[absPath] = {};
+        }
+
+        return this._fileVars[absPath];
+    }
+}
+
 class SassVars {
-    constructor(initPath, names, caseFn) {
+    constructor(initPath, nameProps, caseFn) {
         this._initPath = initPath;
-        this._names = names;
+        this._namesProps = nameProps;
         this._caseFn = caseFn;
         this._vars = {};
     }
@@ -136,7 +186,7 @@ class SassVars {
     }
 
     _processOutput(buf) {
-        Object.entries(this._names).forEach(([name, prop]) => {
+        Object.entries(this._namesProps).forEach(([name, prop]) => {
             let idx = buf.indexOf(prop);
             assert(idx >= 0);
 
@@ -157,7 +207,7 @@ class SassVars {
         str.push(`@import "${this._initPath}";\n`);
         str.push(`#vars_${RAND} {\n`);
 
-        Object.entries(this._names).forEach(([name, prop]) => {
+        Object.entries(this._namesProps).forEach(([name, prop]) => {
             str.push(`${prop}: inspect($${name});\n`);
         });
 
@@ -180,13 +230,13 @@ class VarNames {
     }
 
     _extractNames(filePath) {
-        var [filePath, syntax] = fileSyntax(filePath);
-        var contents = readFileSync(filePath, {encoding: "utf8"});
+        let [fullPath, syntax] = fileSyntax(filePath);
+        let contents = readFileSync(fullPath, {encoding: "utf8"});
 
         parse(contents, {syntax}).forEach(node => {
             switch (node.type) {
             case "atrule":
-                this._processImport(node, filePath);
+                this._processImport(node, fullPath);
             break;
             case "declaration":
                 this._processDecl(node);
@@ -215,7 +265,7 @@ class VarNames {
             return;
         }
 
-        let identNode = kwNode.content[0]
+        let identNode = kwNode.content[0];
 
         if (identNode.content !== "import") {
             return;
@@ -274,12 +324,9 @@ function sameCase(x) {
 }
 
 if (process.env.NODE_ENV === "test") {
-    let {assert} = require("chai");
-
     test("fileSyntax", () => {
-        assert.equal(fileSyntax("abc.scss"), "scss");
-        assert.equal(fileSyntax("abc.sass"), "sass");
-        assert.throws(() => fileSyntax("abc."));
+        assert.deepEqual(fileSyntax("abc.scss"), ["abc.scss", "scss"]);
+        assert.deepEqual(fileSyntax("abc.sass"), ["abc.sass", "sass"]);
         assert.throws(() => fileSyntax("abc.html"));
     });
 }
