@@ -8,5 +8,6 @@ test("default import", () => {
         ANOTHER_COOL_VAR: "turquoise",
         RED_VAR: "red",
         COPY_VAR: "red",
+        TEST_VAR: "\"red; blue\"",
     });
 });

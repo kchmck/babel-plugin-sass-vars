@@ -1,4 +1,3 @@
-import assert from "assert";
 import {readFileSync, existsSync} from "fs";
 import {resolve, dirname, extname} from "path";
 
@@ -186,17 +185,20 @@ class SassVars {
     }
 
     _processOutput(buf) {
-        Object.entries(this._namesProps).forEach(([name, prop]) => {
-            let idx = buf.indexOf(prop);
-            assert(idx >= 0);
+        parse(buf).traverse((node, idx, parent) => {
+            if (node.type !== "customProperty") {
+                return;
+            }
 
-            let end = idx + prop.length;
-            assert(buf[end] === ":");
+            let ident = node.content[0].content;
+            let name = this._namesProps[ident];
 
-            let endIdx = buf.indexOf(";", idx);
-            assert(endIdx >= 0);
+            if (!name) {
+                return;
+            }
 
-            let val = buf.slice(end + 2, endIdx);
+            let val = parent.content[parent.content.length - 1].toString();
+
             this._vars[this._caseFn(name)] = val;
         });
     }
@@ -207,8 +209,8 @@ class SassVars {
         str.push(`@import "${this._initPath}";\n`);
         str.push(`#vars_${RAND} {\n`);
 
-        Object.entries(this._namesProps).forEach(([name, prop]) => {
-            str.push(`${prop}: inspect($${name});\n`);
+        Object.entries(this._namesProps).forEach(([prop, name]) => {
+            str.push(`--${prop}: inspect($${name});\n`);
         });
 
         str.push("}");
@@ -313,7 +315,7 @@ function genCssProps(names) {
     let props = {};
 
     names.forEach(name => {
-        props[name] = `--${name}_${RAND}`;
+        props[`${name}_${RAND}`] = name;
     });
 
     return props;
@@ -324,31 +326,31 @@ function sameCase(x) {
 }
 
 if (process.env.NODE_TEST) {
-    let cassert = require("chai").assert;
+    let {assert} = require("chai");
     let path = require("path");
 
     test("fileSyntax", () => {
-        cassert.deepEqual(fileSyntax("abc.scss"), ["abc.scss", "scss"]);
-        cassert.deepEqual(fileSyntax("abc.sass"), ["abc.sass", "sass"]);
+        assert.deepEqual(fileSyntax("abc.scss"), ["abc.scss", "scss"]);
+        assert.deepEqual(fileSyntax("abc.sass"), ["abc.sass", "sass"]);
 
-        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testSass")),
+        assert.deepEqual(fileSyntax(path.join(__dirname, "../test/testSass")),
             [path.join(__dirname, "../test/testSass.sass"), "sass"]);
-        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testScss")),
+        assert.deepEqual(fileSyntax(path.join(__dirname, "../test/testScss")),
             [path.join(__dirname, "../test/testScss.scss"), "scss"]);
-        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testAmbig")),
+        assert.deepEqual(fileSyntax(path.join(__dirname, "../test/testAmbig")),
             [path.join(__dirname, "../test/testAmbig.sass"), "sass"]);
 
-        cassert.throws(() => fileSyntax("abc.html"));
+        assert.throws(() => fileSyntax("abc.html"));
     });
 
     test("VarNames", () => {
         let vars = new VarNames(path.join(__dirname, "../test/testScss.scss")).extract();
 
-        cassert.equal(vars.size, 4);
-        cassert.isTrue(vars.has("scssvar"));
-        cassert.isTrue(vars.has("sassvar"));
-        cassert.isTrue(vars.has("ambigvar"));
-        cassert.isTrue(vars.has("mapvar"));
+        assert.equal(vars.size, 4);
+        assert.isTrue(vars.has("scssvar"));
+        assert.isTrue(vars.has("sassvar"));
+        assert.isTrue(vars.has("ambigvar"));
+        assert.isTrue(vars.has("mapvar"));
     });
 
     test("SassVars", () => {
@@ -356,7 +358,7 @@ if (process.env.NODE_TEST) {
         let vars = new SassVars(path.join(__dirname, "../test/testScss.scss"),
                                 props, changeCase.camelCase).extract();
 
-        cassert.deepEqual(vars, {
+        assert.deepEqual(vars, {
             sassvar: "42",
             scssvar: "69",
             ambigvar: "green",
@@ -368,7 +370,7 @@ if (process.env.NODE_TEST) {
         let lookup = new VarLookup(changeCase.paramCase, changeCase.constantCase);
 
         let vars = lookup.extractAllVars(path.join(__dirname, "../test/testScss.scss"));
-        cassert.deepEqual(vars, {
+        assert.deepEqual(vars, {
             SASSVAR: "42",
             SCSSVAR: "69",
             AMBIGVAR: "green",
@@ -377,7 +379,7 @@ if (process.env.NODE_TEST) {
 
         vars = lookup.extractVars(path.join(__dirname, "../test/testScss.scss"),
             ["SASSVAR", "MAPVAR"]);
-        cassert.deepEqual(vars, {
+        assert.deepEqual(vars, {
             SASSVAR: "42",
             SCSSVAR: "69",
             AMBIGVAR: "green",
@@ -388,7 +390,7 @@ if (process.env.NODE_TEST) {
 
         vars = lookup.extractVars(path.join(__dirname, "../test/testVars.scss"),
             ["MY_VAR", "ANOTHER_COOL_VAR"]);
-        cassert.deepEqual(vars, {
+        assert.deepEqual(vars, {
             MY_VAR: "42",
             ANOTHER_COOL_VAR: "69",
         });
@@ -397,7 +399,7 @@ if (process.env.NODE_TEST) {
 
         vars = lookup.extractVars(path.join(__dirname, "../test/testVars.scss"),
             ["myVar", "sassvar"]);
-        cassert.deepEqual(vars, {
+        assert.deepEqual(vars, {
             myVar: "42",
             sassvar: "42",
         });
