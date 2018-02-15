@@ -7,6 +7,6 @@ require("@babel/register")({
         }],
     ],
     plugins: [
-        ["@babel/plugin-proposal-object-rest-spread", {useBuiltIns: true}]
+        ["@babel/plugin-proposal-object-rest-spread", {useBuiltIns: true}],
     ],
 });

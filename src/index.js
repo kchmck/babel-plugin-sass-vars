@@ -323,6 +323,83 @@ function sameCase(x) {
     return x;
 }
 
-if (process.env.NODE_ENV === "test") {
-    Object.assign(exports, {fileSyntax, genCssProps, VarNames, SassVars});
+if (process.env.NODE_TEST) {
+    let cassert = require("chai").assert;
+    let path = require("path");
+
+    test("fileSyntax", () => {
+        cassert.deepEqual(fileSyntax("abc.scss"), ["abc.scss", "scss"]);
+        cassert.deepEqual(fileSyntax("abc.sass"), ["abc.sass", "sass"]);
+
+        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testSass")),
+            [path.join(__dirname, "../test/testSass.sass"), "sass"]);
+        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testScss")),
+            [path.join(__dirname, "../test/testScss.scss"), "scss"]);
+        cassert.deepEqual(fileSyntax(path.join(__dirname, "../test/testAmbig")),
+            [path.join(__dirname, "../test/testAmbig.sass"), "sass"]);
+
+        cassert.throws(() => fileSyntax("abc.html"));
+    });
+
+    test("VarNames", () => {
+        let vars = new VarNames(path.join(__dirname, "../test/testScss.scss")).extract();
+
+        cassert.equal(vars.size, 4);
+        cassert.isTrue(vars.has("scssvar"));
+        cassert.isTrue(vars.has("sassvar"));
+        cassert.isTrue(vars.has("ambigvar"));
+        cassert.isTrue(vars.has("mapvar"));
+    });
+
+    test("SassVars", () => {
+        let props = genCssProps(["scssvar", "sassvar", "ambigvar", "mapvar"]);
+        let vars = new SassVars(path.join(__dirname, "../test/testScss.scss"),
+                                props, changeCase.camelCase).extract();
+
+        cassert.deepEqual(vars, {
+            sassvar: "42",
+            scssvar: "69",
+            ambigvar: "green",
+            mapvar: "(abc: 123)",
+        });
+    });
+
+    test("VarLookup", () => {
+        let lookup = new VarLookup(changeCase.paramCase, changeCase.constantCase);
+
+        let vars = lookup.extractAllVars(path.join(__dirname, "../test/testScss.scss"));
+        cassert.deepEqual(vars, {
+            SASSVAR: "42",
+            SCSSVAR: "69",
+            AMBIGVAR: "green",
+            MAPVAR: "(abc: 123)",
+        });
+
+        vars = lookup.extractVars(path.join(__dirname, "../test/testScss.scss"),
+            ["SASSVAR", "MAPVAR"]);
+        cassert.deepEqual(vars, {
+            SASSVAR: "42",
+            SCSSVAR: "69",
+            AMBIGVAR: "green",
+            MAPVAR: "(abc: 123)",
+        });
+
+        lookup = new VarLookup(changeCase.paramCase, changeCase.constantCase);
+
+        vars = lookup.extractVars(path.join(__dirname, "../test/testVars.scss"),
+            ["MY_VAR", "ANOTHER_COOL_VAR"]);
+        cassert.deepEqual(vars, {
+            MY_VAR: "42",
+            ANOTHER_COOL_VAR: "69",
+        });
+
+        lookup = new VarLookup(changeCase.paramCase, changeCase.camelCase);
+
+        vars = lookup.extractVars(path.join(__dirname, "../test/testVars.scss"),
+            ["myVar", "sassvar"]);
+        cassert.deepEqual(vars, {
+            myVar: "42",
+            sassvar: "42",
+        });
+    });
 }
