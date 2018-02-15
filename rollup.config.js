@@ -15,7 +15,7 @@ export default {
             presets: [
                 ["@babel/preset-env", {
                     targets: {node: 8},
-                    useBuiltins: "usage",
+                    useBuiltIns: "usage",
                     modules: false,
                 }],
             ],
