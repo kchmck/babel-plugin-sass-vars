@@ -46,13 +46,7 @@ export default function({types: t}, opts) {
                 let vars = lookup.extractAllVars(absPath);
 
                 replace.push(t.variableDeclaration("const", [
-                    t.variableDeclarator(specs[0].local, t.callExpression(
-                        t.memberExpression(
-                            t.identifier("Object"),
-                            t.identifier("freeze")
-                        ),
-                        [serialize(vars)]
-                    )),
+                    t.variableDeclarator(specs[0].local, createVarsObject(t, vars)),
                 ]));
 
                 specs.shift();
@@ -96,7 +90,7 @@ export default function({types: t}, opts) {
             let absPath = resolveAbsPath(file.opts.filename, importPath);
             let vars = lookup.extractAllVars(absPath);
 
-            astPath.replaceWith(serialize(vars));
+            astPath.replaceWith(createVarsObject(t, vars));
         }
     };
 
@@ -284,6 +278,16 @@ class VarNames {
 
         this._extractNames(absPath);
     }
+}
+
+function createVarsObject(t, vars) {
+    return t.callExpression(
+        t.memberExpression(
+            t.identifier("Object"),
+            t.identifier("freeze")
+        ),
+        [serialize(vars)]
+    );
 }
 
 function resolveAbsPath(requiringPath, importPath) {
