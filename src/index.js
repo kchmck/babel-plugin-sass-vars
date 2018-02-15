@@ -324,9 +324,5 @@ function sameCase(x) {
 }
 
 if (process.env.NODE_ENV === "test") {
-    test("fileSyntax", () => {
-        assert.deepEqual(fileSyntax("abc.scss"), ["abc.scss", "scss"]);
-        assert.deepEqual(fileSyntax("abc.sass"), ["abc.sass", "sass"]);
-        assert.throws(() => fileSyntax("abc.html"));
-    });
+    Object.assign(exports, {fileSyntax, genCssProps, VarNames, SassVars});
 }

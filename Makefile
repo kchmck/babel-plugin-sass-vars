@@ -6,7 +6,7 @@ build:
 	babel -d lib src/index.js
 
 test:
-	NODE_ENV=test mocha --recursive --require .babel-mocha -u qunit src
+	NODE_ENV=test mocha --recursive --require .babel-mocha -u qunit
 
 lint:
 	eslint src
