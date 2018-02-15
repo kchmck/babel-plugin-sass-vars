@@ -1,4 +1,4 @@
-export PATH := $(PWD)/node_modules/.bin/:$(PATH)
+export PATH := $(shell npm bin):$(PATH)
 
 MOCHA = NODE_TEST=1 mocha --recursive
 
