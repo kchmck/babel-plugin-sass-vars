@@ -8,13 +8,13 @@ import {renderSync} from "node-sass";
 import serialize from "babel-literal-to-ast";
 import uuid from "uuid/v4";
 
-//
+// Matches supported extensions.
 const EXT_RE = /\.scss|\.sass/;
 
-//
+// Random string to make CSS properties "unique".
 const RAND = uuid();
 
-//
+// Default babel options.
 const DEFAULT_OPTS = Object.freeze({
     sassCase: null,
     outputCase: null,
