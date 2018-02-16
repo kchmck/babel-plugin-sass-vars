@@ -1,6 +1,6 @@
 {
     "name": "babel-plugin-sass-vars",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Extract sass/scss variables at build time",
     "main": "lib",
     "files": [
