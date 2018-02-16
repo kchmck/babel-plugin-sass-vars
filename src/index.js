@@ -9,7 +9,7 @@ import serialize from "babel-literal-to-ast";
 import uuid from "uuid/v4";
 
 // Matches supported extensions.
-const EXT_RE = /\.scss|\.sass/;
+const EXT_RE = /(?:\.scss|\.sass)$/;
 
 // Random string to make CSS properties "unique".
 const RAND = uuid();
