@@ -50,7 +50,7 @@ following behavior:
 - The target filename must contain an `.scss` or `.sass` extension to be considered
 - All sass values are stringified without further processing, so for example `$var: 42`
   becomes `var: "42"`, `$var: 42px` becomes `var: "42px"`, and `$var: "hello"` becomes
-  `var: '"hello"'`
+  `var: "hello"`
 
 ### Default import
 
