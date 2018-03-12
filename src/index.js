@@ -191,7 +191,8 @@ class SassVars {
                 return;
             }
 
-            let val = parent.content[parent.content.length - 1].toString();
+            let str = parent.content[parent.content.length - 1].toString();
+            let val = str.substring(1, str.length - 1);
 
             this._vars[this._caseFn(name)] = val;
         });
@@ -204,7 +205,7 @@ class SassVars {
         str.push(`#vars_${RAND} {\n`);
 
         Object.entries(this._namesProps).forEach(([prop, name]) => {
-            str.push(`--${prop}: inspect($${name});\n`);
+            str.push(`--${prop}: "#{$${name}}";\n`);
         });
 
         str.push("}");
