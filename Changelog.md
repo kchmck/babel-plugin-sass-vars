@@ -1,3 +1,7 @@
+## v0.2.1 - 2018-03-12
+
+- Fix an example in the readme.
+
 ## v0.2.0 - 2018-03-12
 
 ### Fixes
