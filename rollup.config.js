@@ -1,5 +1,5 @@
-import babel from 'rollup-plugin-babel';
-import replace from 'rollup-plugin-replace';
+import babel from "rollup-plugin-babel";
+import replace from "rollup-plugin-replace";
 
 export default {
     input: "./src/index.js",
