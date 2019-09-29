@@ -123,6 +123,12 @@ when using the named-import form, the named identifiers must also be in this cas
 
 Its value should be given in the same format as `sassCase`.
 
+### `baseDir`
+
+This option identifies base directory for imports.
+
+Its value should be given as string `path`.
+
 ## Examples
 
 ### Basic examples

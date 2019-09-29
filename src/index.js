@@ -27,6 +27,8 @@ export default function({types: t}, opts) {
         changeCase[opts.sassCase] : sameCase;
     let outputCase = opts.outputCase ?
         changeCase[opts.outputCase] : sameCase;
+    let baseDir = opts.baseDir ?
+        opts.baseDir : "";
 
     let lookup = new VarLookup(sassCase, outputCase);
 
@@ -38,7 +40,7 @@ export default function({types: t}, opts) {
                 return;
             }
 
-            let absPath = resolveAbsPath(file.opts.filename, importPath);
+            let absPath = resolveAbsPath(resolve(file.opts.filename, baseDir), importPath);
             let specs = astPath.node.specifiers;
             let replace = [];
 
