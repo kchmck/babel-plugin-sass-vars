@@ -1,4 +1,7 @@
-# babel-plugin-sass-vars [![npm](https://img.shields.io/npm/v/babel-plugin-sass-vars.svg)](https://www.npmjs.com/package/babel-plugin-sass-vars)
+# babel-plugin-sass-vars
+
+[![CI](https://github.com/kchmck/babel-plugin-sass-vars/workflows/main/badge.svg)](https://github.com/kchmck/babel-plugin-sass-vars/actions)
+[![npm](https://img.shields.io/npm/v/babel-plugin-sass-vars.svg)](https://www.npmjs.com/package/babel-plugin-sass-vars)
 
 Extract [sass/scss](https://sass-lang.com) variables at build time.
 
