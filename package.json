@@ -32,6 +32,7 @@
         "@babel/preset-env": "^7.6.2",
         "@babel/register": "^7.6.2",
         "chai": "^4.2.0",
+        "core-js": "^3.2.1",
         "eslint": "^4.19.1",
         "mocha": "^5.2.0",
         "rollup": "^0.55.5",

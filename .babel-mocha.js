@@ -3,6 +3,7 @@ require("@babel/register")({
         ["@babel/preset-env", {
             targets: {node: "current"},
             useBuiltIns: "usage",
+            corejs: "3",
             shippedProposals: true,
         }],
     ],
