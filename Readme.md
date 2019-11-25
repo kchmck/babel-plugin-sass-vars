@@ -1,3 +1,9 @@
+# Unmaintained / Obsolete (Nov 2019)
+
+This project is unmaintained, as most of its functionality can now be replicated by
+exporting CSS variables and using `getComputedStyle().getPropertyValue()`. Please fork if
+need be!
+
 # babel-plugin-sass-vars
 
 [![CI](https://github.com/kchmck/babel-plugin-sass-vars/workflows/main/badge.svg)](https://github.com/kchmck/babel-plugin-sass-vars/actions)
